@@ -30,24 +30,20 @@ of sqlite we link with.
 # What to expect
 
 ```shell
+> zig version
+0.11.0-dev.3348+3faf376b0
+
+
+> go version
+go version go1.20.4 darwin/arm64
+
 > make
 go run .
 2023/06/03 15:16:05 sqlite version: 3.42.0
 
+
 > make build
-GOOS=windows GOARCH=amd64 CC="zig cc -target x86_64-windows" \
-		go build -o bin/demo.windows.amd64 ./
-GOOS=windows GOARCH=arm64 CC="zig cc -target aarch64-windows" \
-		go build -o bin/demo.windows.arm64 ./
-GOOS=darwin GOARCH=amd64 CC="zig cc -target x86_64-macos -F./resources/sdk-macos-12.0/root/System/Library/Frameworks" \
-		go build -o bin/demo.darwin.amd64 -ldflags="-s -w" ./
-warning: unsupported linker arg: -no_pie
-GOOS=darwin GOARCH=arm64 CC="zig cc -target aarch64-macos -F./resources/sdk-macos-12.0/root/System/Library/Frameworks" \
-		go build -o bin/demo.darwin.arm64 -ldflags="-s -w" ./
-GOOS=linux GOARCH=amd64 CC="zig cc -target x86_64-linux-musl" \
-		go build -o bin/demo.linux.amd64 ./
-GOOS=linux GOARCH=arm64 CC="zig cc -target aarch64-linux-musl" \
-		go build -o bin/demo.linux.arm64 ./
+# lots of output and some warnings
 
 > exa -l bin/
 .rwxr-xr-x 3.9M jonathan  3 Jun 15:15 demo.darwin.amd64
@@ -57,43 +53,54 @@ GOOS=linux GOARCH=arm64 CC="zig cc -target aarch64-linux-musl" \
 .rwxr-xr-x 7.5M jonathan  3 Jun 15:15 demo.windows.amd64
 .rwxr-xr-x 7.3M jonathan  3 Jun 15:15 demo.windows.arm64
 
+
 > file bin/*
 bin/demo.darwin.amd64:  Mach-O 64-bit executable x86_64
 bin/demo.darwin.arm64:  Mach-O 64-bit executable arm64
-bin/demo.linux.amd64:   ELF 64-bit LSB executable, x86-64, version 1 (SYSV), static-pie linked, Go BuildID=P5a6UwCSQIJgaPqjyWkr/39wTGQRqh1WrihL7R3QD/GxN2OqNYpjYMH5ovTVlj/GkHa-s4_yopB88O4KO9T, with debug_info, not stripped
-bin/demo.linux.arm64:   ELF 64-bit LSB executable, ARM aarch64, version 1 (SYSV), static-pie linked, Go BuildID=y1yKGLsR5RtMIcGpeEXF/zqr56jGA9-4KxXFNZzPZ/RC6eqTq8k-09QMpq1NDc/ExeJsdCIc3fPZeZI5X8C, with debug_info, not stripped
+bin/demo.linux.amd64:   ELF 64-bit LSB executable, x86-64, version 1 (SYSV), static-pie linked, Go BuildID=zt5fjDLBfRocGoyJXVhH/oAFtc7JEapmKJeZkspEG/4yP4WXg5-ZZ1e4I-eU4y/2_uUjRkYn0pEsK3Eo4u5, with debug_info, not stripped
+bin/demo.linux.arm64:   ELF 64-bit LSB executable, ARM aarch64, version 1 (SYSV), static-pie linked, Go BuildID=bjkr2DjkVwy-qM6drUcW/_cJqPYZUdrMTXzhyeZBA/Ojl7Mr8VPNV8XdZkZH_N/VsyO3eN8-DBs5RFcwkRw, with debug_info, not stripped
 bin/demo.windows.amd64: PE32+ executable (console) x86-64, for MS Windows
 bin/demo.windows.arm64: PE32+ executable (console) Aarch64, for MS Windows
 
-# I'm using macOS here (M1/aarch64)
+
+# macOS M1/aarch64 (arm64)
 > otool -L bin/demo.darwin.*
 bin/demo.darwin.amd64:
 	/usr/lib/libSystem.B.dylib (compatibility version 1.0.0, current version 1292.100.5)
 bin/demo.darwin.arm64:
 	/usr/lib/libSystem.B.dylib (compatibility version 1.0.0, current version 1292.100.5)
 	/System/Library/Frameworks/CoreFoundation.framework/Versions/A/CoreFoundation (compatibility version 150.0.0, current version 1853.0.0)
+> ./bin/demo.darwin.arm64
+2023/06/03 16:07:28 sqlite version: 3.42.0
 
-# Running in linux with Alpine (aarch64)
+
+# Alpine aarch64 (arm64)
 > podman run --rm -it -w /app -v "$PWD":/app alpine
+/app # uname -mo
+aarch64 Linux
 /app # ldd bin/demo.linux.amd64
-	/lib/ld-musl-aarch64.so.1 (0xffff95a18000)
+	/lib/ld-musl-aarch64.so.1 (0xffff80588000)
 /app # ldd bin/demo.linux.arm64
-	/lib/ld-musl-aarch64.so.1 (0xffffb7b09000)
+	/lib/ld-musl-aarch64.so.1 (0xffff80979000)
 /app # ./bin/demo.linux.arm64
-2023/06/03 21:28:50 sqlite version: 3.42.0
+2023/06/03 22:08:06 sqlite version: 3.42.0
 
-# Running in linux with Debian (aarch64)
-> podman run --rm -it -w /app -v "$PWD":/app debian
-root@d8d73ca7a3d3:/app# ldd bin/demo.linux.a*
-bin/demo.linux.amd64:
-	not a dynamic executable
-bin/demo.linux.arm64:
-	statically linked
+
+# Debian aarch64 (arm64)
+> podman run --rm -it -w /app -v "$PWD":/app debian ./bin/demo.linux.arm64
+2023/06/03 22:09:30 sqlite version: 3.42.0
+
+
+# Debian x86_64 (amd64)
+> podman run --rm -it -w /app -v "$PWD":/app amd64/debian ./bin/demo.linux.amd64
+WARNING: image platform (linux/amd64) does not match the expected platform (linux/arm64)
+2023/06/03 22:09:48 sqlite version: 3.42.0
 ```
 
 # Exercise for the reader
 
-Get this working with [goreleaser](https://goreleaser.com/).
+1. Run the binaries on windows
+2. Get cross-platform builds going with [goreleaser](https://goreleaser.com/).
 
 <details>
 <summary>Sneak peek:</summary>
@@ -125,7 +132,8 @@ builds:
 
 # Thanks 
 
-Prior art for using Zig as a cross-compiler goes to [Loris Cro](https://github.com/kristoff-it)'s
+* Prior art for using Zig as a cross-compiler: [Loris Cro](https://github.com/kristoff-it)'s
 [article](https://zig.news/kristoff/building-sqlite-with-cgo-for-every-os-4cic).
-
-Check the details in the article for why we omit debug info for the macOS binaries.
+  Check the details in the article for why we omit debug info for the macOS binaries.
+* Addition of `-buildmode=pie` for macOS targets: https://github.com/ziglang/zig/issues/15439
+* Linking against macOS SDK: https://github.com/ziglang/zig/issues/1349

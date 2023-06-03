@@ -23,11 +23,11 @@ bin/demo.windows.arm64:
 
 bin/demo.darwin.amd64:
 	GOOS=darwin GOARCH=amd64 CC="zig cc -target x86_64-macos -F./resources/sdk-macos-12.0/root/System/Library/Frameworks" \
-		go build -o $@ -ldflags="-s -w" ./
+		go build -o $@ -ldflags="-buildmode=pie -s -w" ./
 
 bin/demo.darwin.arm64:
 	GOOS=darwin GOARCH=arm64 CC="zig cc -target aarch64-macos -F./resources/sdk-macos-12.0/root/System/Library/Frameworks" \
-		go build -o $@ -ldflags="-s -w" ./
+		go build -o $@ -ldflags="-buildmode=pie -s -w" ./
 
 bin/demo.linux.amd64:
 	GOOS=linux GOARCH=amd64 CC="zig cc -target x86_64-linux-musl" \
